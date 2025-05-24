@@ -8,7 +8,7 @@ import re
 
 def scrape_youtube_comments(api_key, query, limit_videos, limit_comments):
     """Funzione per fare scraping dei commenti da YouTube."""
-
+    
     collected_data = []
     observation_time = datetime.now(pytz.utc).isoformat()
     print(f"\nInizio scraping YouTube con query: '{query}'...")
@@ -84,10 +84,6 @@ def clean_text(text):
 
 def save_data_to_csv(df_new, file_path):
     """Conttrolla che non ci siano duplicati all'interno del DataFrame e lo salva in un file CSV."""
-
-    dir_name = os.path.dirname(file_path)
-    if not os.path.exists(dir_name):
-        os.makedirs(dir_name)
 
     existing_df = pd.DataFrame()
 

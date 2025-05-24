@@ -1,6 +1,7 @@
 cachetools==5.5.2
 certifi==2025.4.26
 charset-normalizer==3.4.2
+dotenv==0.9.9
 emoji==2.14.1
 google-api-core==2.24.2
 google-api-python-client==2.170.0
@@ -11,6 +12,8 @@ httplib2==0.22.0
 idna==3.10
 numpy==2.2.6
 pandas==2.2.3
+praw==7.8.1
+prawcore==2.4.0
 proto-plus==1.26.1
 protobuf==6.31.0
 pyasn1==0.6.1
@@ -19,9 +22,12 @@ pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
 pytz==2025.2
+redis==6.1.0
 requests==2.32.3
 rsa==4.9.1
 six==1.17.0
 tzdata==2025.2
+update-checker==0.18.0
 uritemplate==4.1.1
 urllib3==2.4.0
+websocket-client==1.8.0

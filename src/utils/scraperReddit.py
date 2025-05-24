@@ -1,6 +1,6 @@
 
 from dotenv import load_dotenv
-from src.utils.utilsReddit import scrape_reddit_posts_and_comments, data_to_csv
+from src.utils.utilsReddit import scrape_reddit_posts_and_comments, data_to_csv, sendDataToRedis
 import os 
 import praw
 import time
@@ -15,10 +15,9 @@ reddit = praw.Reddit(
 )
 
 # --- Scraping function ---
-def startScraping(subreddit_name, max_posts, max_comments_per_post, frequency):
+def startScrapingReddit(subreddit_name, max_posts, max_comments_per_post, frequency):
     while True:
         df_reddit = scrape_reddit_posts_and_comments(subreddit_name, max_posts, max_comments_per_post, reddit)
         data_to_csv(df_reddit, subreddit_name)
-
         time.sleep(frequency)
 

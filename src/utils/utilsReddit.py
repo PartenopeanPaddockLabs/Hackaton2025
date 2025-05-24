@@ -5,6 +5,9 @@ import pandas as pd
 from datetime import datetime
 import pytz
 import emoji as em
+import os
+from src.utils.utilsRedis import sendDataToRedis
+from src.utils.utilsYoutube import save_data_to_csv
 
 
 def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limit=20, reddit=None):
@@ -48,6 +51,8 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
         comment_counter = 0
 
 
+        comments = []
+
         for comment in post.comments:
             if comment_counter >= comment_limit:
                 break
@@ -76,9 +81,15 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
             }
             collected_data.append(comment_data)
             comment_counter += 1
+            comments.append(comment_data)
+        
+        post_data['comments'] = comments #Aggiungiamo la lista di commenti
+
+        #INVIA OGNI POST A REDIS
+        sendDataToRedis(post_data, subreddit_name)
 
     print(f"\nScraping completato. Totale elementi raccolti: {len(collected_data)}")
-    return pd.DataFrame(collected_data)
+    return pd.DataFrame(collected_data) 
 
 
 def cleanText(text, isPost):
@@ -98,12 +109,14 @@ def data_to_csv(df_reddit, subreddit_to_scrape):
   print(df_reddit.head())
   print(f"\nDimensioni DataFrame Reddit: {df_reddit.shape}")
 
+  path = "data"
   file_name = f"reddit_data_{subreddit_to_scrape}.csv"
+  file_path=os.path.join(path, file_name)
   df = df_reddit.drop_duplicates(subset=['content_id'], keep='first')
-  df.to_csv(file_name, index=False)
+  save_data_to_csv(df, file_path)
+  #df.to_csv(file_name, index=False)
   print(f"\nDati Reddit salvati in: {file_name}")
 
 
-def sendDataToRedis():
-    pass
+
 

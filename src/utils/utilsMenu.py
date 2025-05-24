@@ -1,7 +1,7 @@
-from src.utils.scraperReddit import startScraping
+from src.utils.scraperReddit import startScrapingReddit
+from src.utils.scraperYoutube import start_scraping_youtube
 import multiprocessing as mp
 
-#scraping Youtube...
 def get_reddit_config():
     topic = input("Reddit - Topic to search: ")
     num_posts = int(input("Reddit - Number of posts: "))
@@ -37,8 +37,7 @@ def run_scraper(config):
             print(f"  {k}: {v}") 
         
     if config['scraper']=='reddit':
-        p = mp.Process(target=startScraping, args=(config['topic'], config['num_posts'], config['num_comments'], config['frequency']))
+        p = mp.Process(target=startScrapingReddit, args=(config['topic'], config['num_posts'], config['num_comments'], config['frequency']))
     elif config['scraper']=='youtube':
-        #youtube
-        pass
+        p = mp.Process(target=start_scraping_youtube, args=(config['query'], config['max_videos'], config['max_comments'], config['frequency']))
     p.start()
