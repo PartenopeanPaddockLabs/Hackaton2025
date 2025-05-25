@@ -6,7 +6,7 @@ from datetime import datetime
 import pytz
 import emoji as em
 import os
-from src.utils.utilsRedis import sendDataToRedis
+from src.utils.utilsRedis import sendDataRedditToRedis, checkRedditPostAlreadyElaborated
 from src.utils.utilsYoutube import save_data_to_csv
 
 
@@ -22,6 +22,13 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
         post_url = f"https://www.reddit.com{post.permalink}"
         publish_date_iso = datetime.utcfromtimestamp(post.created_utc).replace(tzinfo=pytz.utc).isoformat()
 
+        # Check if the post was already elaborated
+        post_content_id = f"reddit_post_{post.id}"
+        if checkRedditPostAlreadyElaborated(post_content_id, subreddit_name):
+            print(f"Skipping already processed post: {post_content_id}")
+            continue
+
+
         #Post body cleaning
         cleanedPostText=cleanText(post,True)
 
@@ -34,7 +41,7 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
             'social_media': 'Reddit',
             'publish_date': publish_date_iso,
             'geo_location': None,
-            'raw_text': cleanedPostText,
+            'comment_raw_text': cleanedPostText,
             'emoji': em.distinct_emoji_list(post.selftext),
             'reference_post_url': post_url,
             'like_count': post.score,
@@ -82,11 +89,14 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
             collected_data.append(comment_data)
             comment_counter += 1
             comments.append(comment_data)
-        
-        post_data['comments'] = comments #Aggiungiamo la lista di commenti
+
+        # Copy to send post with innested comments
+        post_data_for_redis = post_data.copy()
+        post_data_for_redis['comments'] = comments #Aggiungiamo la lista di commenti
+
 
         #INVIA OGNI POST A REDIS
-        sendDataToRedis(post_data, subreddit_name)
+        sendDataRedditToRedis(post_data_for_redis, subreddit_name)
 
     print(f"\nScraping completato. Totale elementi raccolti: {len(collected_data)}")
     return pd.DataFrame(collected_data) 

@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 import pytz
 from googleapiclient.discovery import build
+from src.utils.utilsRedis import sendDataYoutubeToRedis, checkYoutubeCommentAlreadyElaborated
 import emoji
 import re
 
@@ -38,6 +39,14 @@ def scrape_youtube_comments(api_key, query, limit_videos, limit_comments):
                 ).execute()
 
                 for item in comment_response.get('items', []):
+
+                    content_id = f"yt_comm_{item['snippet']['topLevelComment']['id']}"
+
+                    # Check if the comment was already elaborated
+                    if checkYoutubeCommentAlreadyElaborated(video_id, content_id):
+                        print(f"Youtube comment {content_id} of video {video_id} was already elborated")
+                        continue
+
                     comment = item['snippet']['topLevelComment']['snippet']
                     publish_date_aware = datetime.strptime(comment['publishedAt'], "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.utc)
                     publish_date_iso = publish_date_aware.isoformat()
@@ -47,7 +56,7 @@ def scrape_youtube_comments(api_key, query, limit_videos, limit_comments):
 
                     emojis_found = emoji.distinct_emoji_list(comment_raw_text)
                     data = {
-                        'content_id': f"yt_comm_{item['snippet']['topLevelComment']['id']}",
+                        'content_id': content_id,
                         'observation_time': observation_time,
                         'user': comment['authorDisplayName'],
                         'user_location': None,
@@ -65,6 +74,10 @@ def scrape_youtube_comments(api_key, query, limit_videos, limit_comments):
                         'content_type': 'commento'
                     }
                     collected_data.append(data)
+
+                    # Send comment to Redis
+                    sendDataYoutubeToRedis(video_id, data)
+
                     comments_in_video += 1
                 print(f"Raccolti {comments_in_video} commenti.")
 
@@ -83,7 +96,7 @@ def clean_text(text):
     return text
 
 def save_data_to_csv(df_new, file_path):
-    """Conttrolla che non ci siano duplicati all'interno del DataFrame e lo salva in un file CSV."""
+    """Controlla che non ci siano duplicati all'interno del DataFrame e lo salva in un file CSV."""
 
     existing_df = pd.DataFrame()
 

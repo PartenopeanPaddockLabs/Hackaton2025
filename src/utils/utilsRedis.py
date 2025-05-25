@@ -14,6 +14,7 @@ redis_password = os.getenv("REDIS_PASSWORD", None)
 redis_db = int(os.getenv("REDIS_DB", 0))
 
 processed_ids_key_prefix = "processed_reddit_ids" #per tenere traccia di quelli gia' inviati
+processed_ids_key_prefix_y = "processed_youtube_ids"
 
 # Connessione a Redis
 
@@ -39,7 +40,7 @@ except Exception as e:
     r = None
 
 
-def sendDataToRedis(post_data, subreddit_name):
+def sendDataRedditToRedis(post_data, subreddit_name):
     if r:
         try:
             processed_ids_key=f"{processed_ids_key_prefix}:{subreddit_name}"
@@ -48,3 +49,37 @@ def sendDataToRedis(post_data, subreddit_name):
             print(f"Post {post_data['content_id']} salvato come JSON nativo in Redis.")
         except Exception as e:
             print(f"Errore nell'invio del post a Redis con RedisJSON: {e}")
+
+def checkRedditPostAlreadyElaborated(post_content_id, subreddit_name):
+    if r:
+        try:
+                processed_ids_key = f"{processed_ids_key_prefix}:{subreddit_name}"
+                if r.sismember(processed_ids_key, post_content_id):
+                    return True
+                else:
+                    return False
+        except Exception as e:
+            print(f"Error checking post id already elaborated: {e}")
+            return False
+        
+def sendDataYoutubeToRedis(video_id, comment_data):
+    if r: 
+        try:
+            processed_ids_key = f"{processed_ids_key_prefix_y}:{video_id}"
+            r.json().set(f"youtube:json{comment_data['content_id']}", Path.root_path(), comment_data)
+            r.sadd(processed_ids_key, *[comment_data['content_id']])
+            print(f"Youtube Comment {comment_data['content_id']} saved as native Json in Redis.")
+        except Exception as e:
+            print(f"Error sending comment to Redis: {e}")
+
+def checkYoutubeCommentAlreadyElaborated(video_id, comment_id):
+    if r:
+        try:
+                processed_ids_key = f"{processed_ids_key_prefix_y}:{video_id}"
+                if r.sismember(processed_ids_key, comment_id):
+                    return True
+                else:
+                    return False
+        except Exception as e:
+            print(f"Error checking post id already elaborated: {e}")
+            return False

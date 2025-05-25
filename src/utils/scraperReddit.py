@@ -1,6 +1,6 @@
 
 from dotenv import load_dotenv
-from src.utils.utilsReddit import scrape_reddit_posts_and_comments, data_to_csv, sendDataToRedis
+from src.utils.utilsReddit import scrape_reddit_posts_and_comments, data_to_csv
 import os 
 import praw
 import time
