@@ -10,7 +10,23 @@ from src.utils.utilsRedis import sendDataRedditToRedis, checkRedditPostAlreadyEl
 from src.utils.utilsYoutube import save_data_to_csv
 
 
-def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limit=20, reddit=None):
+def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limit=20, reddit=None):   
+    """
+    Scrapes posts and their top-level comments from a specified Reddit subreddit.
+    It collects data for both posts and comments, handles text cleaning,
+    checks for already processed posts using Redis, and prepares data
+    for storage in Redis (with nested comments) and for a Pandas DataFrame (flat structure).
+
+    Args:
+        subreddit_name (str): The name of the subreddit to scrape (e.g., 'python').
+        post_limit (int): The maximum number of hot posts to retrieve.
+        comment_limit (int): The maximum number of top-level comments to retrieve per post.
+        reddit (praw.Reddit): An initialized PRAW Reddit instance for API interaction.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing scraped post and comment data,
+                          where each post and comment is a separate row.
+    """
     collected_data = []
     observation_time = datetime.now(pytz.utc).isoformat()
 
@@ -18,21 +34,21 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
 
     subreddit = reddit.subreddit(subreddit_name)
 
+    # Cycling posts
     for post in subreddit.hot(limit=post_limit):
         post_url = f"https://www.reddit.com{post.permalink}"
         publish_date_iso = datetime.utcfromtimestamp(post.created_utc).replace(tzinfo=pytz.utc).isoformat()
 
-        # Check if the post was already elaborated
+        # Checking if the post was already elaborated
         post_content_id = f"reddit_post_{post.id}"
         if checkRedditPostAlreadyElaborated(post_content_id, subreddit_name):
             print(f"Skipping already processed post: {post_content_id}")
             continue
 
-
         #Post body cleaning
         cleanedPostText=cleanText(post,True)
 
-
+        # Building json for reddit post
         post_data = {
             'content_id': f"reddit_post_{post.id}",
             'observation_time': observation_time,
@@ -53,21 +69,22 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
         }
         collected_data.append(post_data)
 
-        # Commenti principali
+        # Principal Comments
         post.comments.replace_more(limit=0)
         comment_counter = 0
 
-
         comments = []
 
+        # Cycling comments
         for comment in post.comments:
             if comment_counter >= comment_limit:
                 break
             publish_date_iso = datetime.utcfromtimestamp(comment.created_utc).replace(tzinfo=pytz.utc).isoformat()
 
-            #Comment body cleaning
+            # Comment body cleaning
             cleanedCommentText=cleanText(comment,False)
 
+            # Building json for reddit comments of the post
             comment_data = {
                 'content_id': f"reddit_comm_{comment.id}",
                 'observation_time': observation_time,
@@ -80,7 +97,7 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
                 'emoji': em.distinct_emoji_list(comment.body),
                 'reference_post_url': post_url,
                 'like_count': comment.score,
-                'reply_count': 0,  # Reddit non offre conteggio diretto delle risposte per ogni commento
+                'reply_count': 0,  # Reddit does not provide direct reply count for each comment
                 'repost_count': 0,
                 'quote_count': 0,
                 'bookmark_count': 0,
@@ -94,8 +111,7 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
         post_data_for_redis = post_data.copy()
         post_data_for_redis['comments'] = comments #Aggiungiamo la lista di commenti
 
-
-        #INVIA OGNI POST A REDIS
+        # Send each post to redis
         sendDataRedditToRedis(post_data_for_redis, subreddit_name)
 
     print(f"\nScraping completato. Totale elementi raccolti: {len(collected_data)}")
@@ -103,11 +119,29 @@ def scrape_reddit_posts_and_comments(subreddit_name, post_limit=10, comment_limi
 
 
 def cleanText(text, isPost):
-    if isPost == True: #In this case, is a Post
+    """
+    Cleans the raw text content of a Reddit post or comment.
+    It removes URLs and replaces multiple newlines with single spaces.
+
+    Args:
+        text (praw.models.Submission or praw.models.Comment): The PRAW object
+                                                              representing a post or comment.
+        isPost (bool): True if the text belongs to a post (uses `selftext`),
+                       False if it belongs to a comment (uses `body`).
+
+    Returns:
+        str: The cleaned text content.
+    """
+
+    # In this case, is a Post
+    if isPost == True: 
         postText = text.selftext.strip() if text.selftext != None else " "
-    else: #In this case, is a Comment
+    
+    # In this case, is a Comment
+    else: 
         postText =  text.body.strip() if text.body != None else " "
 
+    # Regex for urls
     postText = re.sub(r'https?://\S+', '', postText)
     cleanedPostText = re.sub(r'\n+', ' ', postText)
     return cleanedPostText
@@ -115,17 +149,25 @@ def cleanText(text, isPost):
 
 # --- Output ---
 def data_to_csv(df_reddit, subreddit_to_scrape):
-  print("\n--- Anteprima Dati Reddit ---")
-  print(df_reddit.head())
-  print(f"\nDimensioni DataFrame Reddit: {df_reddit.shape}")
+    """
+    Saves the collected Reddit DataFrame to a CSV file.
+    It also prints a preview and dimensions of the DataFrame.
 
-  path = "data"
-  file_name = f"reddit_data_{subreddit_to_scrape}.csv"
-  file_path=os.path.join(path, file_name)
-  df = df_reddit.drop_duplicates(subset=['content_id'], keep='first')
-  save_data_to_csv(df, file_path)
-  #df.to_csv(file_name, index=False)
-  print(f"\nDati Reddit salvati in: {file_name}")
+    Args:
+        df_reddit (pandas.DataFrame): The DataFrame containing Reddit post and comment data.
+        subreddit_to_scrape (str): The name of the subreddit, used for naming the output CSV file.
+    """
+    print("\n--- Reddit Data Preview ---")
+    print(df_reddit.head())
+    print(f"\nReddit DataFrame Dimensions: {df_reddit.shape}")
+
+    path = "data"
+    file_name = f"reddit_data_{subreddit_to_scrape}.csv"
+    file_path=os.path.join(path, file_name)
+    df = df_reddit.drop_duplicates(subset=['content_id'], keep='first')
+    save_data_to_csv(df, file_path)
+    #df.to_csv(file_name, index=False)
+    print(f"\nReddit data saved to: {file_name}")
 
 
 
