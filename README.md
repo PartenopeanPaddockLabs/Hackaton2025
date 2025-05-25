@@ -1,216 +1,178 @@
-# 🧠 Hackathon Big Data & AI  
-## Challenge Ufficiale 🚀  
-**"F1 Social Analytics Engine: estrazione, integrazione e sentiment analysis dal GP di Monaco 2025"**
-
----
-## Indice
-
-- [🏁 Obiettivo](#-obiettivo)
-- [📥 Fase 1 — Data Ingestion and Dataset Building](#-fase-1---data-ingestion-and-dataset-building)
-    - [📇 Schema dataset finale](#-schema-dataset-finale)
-- [📥 Fase 2 — Social Analysis](#-fase-2---social-analysis)
-    - [🎯 Obiettivo della parte di Social Analysis](#-obiettivo-della-parte-di-social-analysis)
-    - [✨ Bonus: Estensione LLM-based - Creazione automatica dei report](#-bonus-estensione-llm-based---generatione-automatica-dei-report)
-- [📦 Modalità di consegna](#-modalità-di-consegna)
-- [📜 Metriche di Valutazione e Punteggi](#-metriche-di-valutazione-e-punteggi)
-- [1️⃣ Inizializzazione progetto](#-inizializzazione-progetto)
-- [🕒 Timeline](#-timeline)
-
----
-
-## 🏁 Obiettivo 
-
-In occasione del Gran Premio di Monaco 2025, uno degli eventi più iconici e seguiti della Formula 1, il vostro compito è progettare e realizzare un sistema intelligente che recupera, integra e analizza post e commenti provenienti dai social media, per comprendere come gli utenti vivono l’evento prima, durante e dopo la gara.
-
-L'obiettivo è cogliere le emozioni, le opinioni e le reazioni degli appassionati di motori sparsi in tutto il mondo, offrendo un quadro dinamico e aggiornato in tempo reale su come il pubblico percepisce i piloti, le scuderie, i momenti salienti e gli episodi controversi della gara. Sarà anche importante profilare il tipo di spettatori e/o di appassionati dell'evento estraendo caratteristiche comuni a gruppi di utenti simili.
-
-Questa sfida ha due anime principali:
-
-- **Data ingestion & dataset building (fondamentale!)**
-- **Social analysis avanzata (con o senza LLM)**
-
----
-
-
-## 📥 Fase 1 - Data Ingestion and Dataset Building
-
-Progettare e implementare una pipeline di data ingestion che:
-
-- 🔍 Recupera in modo automatico (o semi-automatico) contenuti testuali da diversi social media: Instagram, Facebook, Twitter/X, Reddit, YouTube (ma anche altri non in lista che pensate possano essere significativi). (Le analisi cross-platform sono ben gradite 🤗)
-
-- 🧹 Pulisce, filtra e normalizza i dati testuali, le interazioni e i metadati.
-
-- 📦 Produce un dataset finale conforme a uno schema comune condiviso da tutti i gruppi (vedi sotto).
-
-
-📜 NOTA
-- _Il linguaggio ufficiale è l'Inglese ovviamente, ma i più coraggiosi possono provare a fare analisi multilingua (gestendo anche il Francese ad esempio)_
-
----
-
-### 📇 Schema dataset finale:
-
-Di seguito lo schema che dovrà seguire il Dataset ottenuto a valle della prima fase.
-
-| Feature           | Descrizione                                                                 | Datatype             | Nullable | Note                                        | Esempio                  |
-|-------------------|-----------------------------------------------------------------------------|----------------------|----------|---------------------------------------------|--------------------------|
-| content_id        | ID univoco del post o commento                                              | stringa              | No       | es. ID nativo social o hash generato        | fb_post_001              |
-| observation_time  | Timestamp di un’osservazione di uno specifico contenuto                     | datetime (ISO 8601)  | No       | formato: YYYY-MM-DDTHH:MM:SSZ                | 2025-05-15T10:00:00Z     |
-| user              | ID o nome utente (anonimizzato se necessario)                              | stringa              | No       |                                             | giulia_snap              |
-| user_location     | Città/Stato indicati nel profilo dell’utente (se presente)                  | stringa              | Si       |                                             | Nizza                    |
-| social_media      | Nome della piattaforma (es. Twitter, Reddit, etc.)                          | stringa              | No       |                                             | Instagram                |
-| publish_date      | Timestamp UTC del post/commento                                             | datetime (ISO 8601)  | No       | formato: YYYY-MM-DDTHH:MM:SSZ                | 2025-05-25T19:45:10Z     |
-| geo_location      | Coordinate GPS (latitudine, longitudine) del luogo dell’interazione         | tuple(float, float)  | Si       |                                             | (45.4642, 9.1900)        |
-| comment_raw_text  | Testo originale del contenuto                                               | stringa              | No       | Se non c’è testo, mettere stringa vuota ""  | Corsa Pazzesca 😬🏎️       |
-| emoji             | Emoji utilizzate nel testo                                                  | Lista[stringa]       | Si       |                                             | 😬🏎️                      |
-| reference_post_url| Link al post originale (se è una risposta/commento)                        | stringa              | Si       | Deve essere un URL                           | facebook.com/post/123456789 |
-| like_count        | Numero di like/upvote                                                       | Intero               | No       | Default 0, non può essere negativo          | 112                      |
-| reply_count       | Numero di commenti/risposte ricevute                                       | Intero               | No       | Default 0, non può essere negativo          | 17                       |
-| repost_count      | Numero di condivisioni/retweet                                             | Intero               | No       | Default 0, non può essere negativo          | 1                        |
-| quote_count       | Quote tweet o repost con commento (se disponibile)                         | Intero               | No       | Default 0, non può essere negativo          | 0                        |
-| bookmark_count    | Numero di salvataggi (se disponibile)                                     | Intero               | No       | Default 0, non può essere negativo          | 0                        |
-| content_type      | Tipo di contenuto analizzato                                               | stringa              | No       | Valore categorico: "post" o "commento"      | post                     |
-
-
-📜 NOTA
-_E' importante che tutti i dataset rispettino la convenzione riportata sopra, i dataset che non rispettano lo schema saranno penalizzati in fase di valutazione_
-
----
-
-## 📥 Fase 2 - Social Analysis
-
-Una volta creato un dataset coerente, la sfida si sposta sull'analisi dei risultati. Ecco cosa includere, come strutturare la consegna e cosa valutare.
-
-### 🎯 Obiettivo della Social Analysis
-
-Analizzare i contenuti raccolti (post/commenti) per comprendere come evolve l’umore e la percezione degli utenti nel tempo e nello spazio in relazione al Gran Premio di Monaco 2025, con un focus sulle fasi prima, durante e dopo la gara. Oltretutto raccogliendo le informazioni degli utenti sarà possibile anche definirne i profili e le caratteristiche comuni.
-
-L’analisi può mettere in luce emozioni, attese, reazioni e controversie legate ai piloti, ai team e possibili correlazioni con gli eventi chiave della gara. Sono quindi suggerite tecniche di Sentiment Analysis,
-Emotion Analysis, hate speech recognition, ma anche virality pattern recognition, misinformation detection etc.
-
----
-
-#### ⚙️ Approcci suggeriti
-
-#### 1. Approccio classico (NLP tradizionale)
-
-Utilizzo di tecniche di Natural Language Processing tradizionali, quali:  
-- Pre-elaborazione del testo (tokenizzazione, rimozione stopwords, stemming)  
-- Rappresentazione con tecniche tipo TF-IDF  
-- Classificatori supervisionati (SVM, Naive Bayes, Random Forest)  
-- Analizzatori di sentiment già pronti come TextBlob o VAD  
-
-#### 2. Approccio con LLM (Large Language Models)
-
-Sfruttare modelli linguistici di nuova generazione (GPT, LLaMA, Claude, Mistral, ecc.) per:  
-- Classificare direttamente il sentiment di ogni contenuto  
-- Estendere l’analisi con rilevazione di emozioni, argomenti principali, intensità del sentimento  
-- Arricchire dati mancanti (es. dedurre location, riconoscere sarcasmo, ecc.)  
-
-Questi modelli possono essere interrogati tramite prompt ben costruiti per analisi dettagliate su testi brevi, rumorosi o ambigui.
-
-### Alcuni riferimenti utili:
-
-- Emotion recognition
-⁠https://huggingface.co/SamLowe/roberta-base-go_emotions
-⁠⁠https://huggingface.co/j-hartmann/emotion-english-distilroberta-base
-
-- Hate Speech Recognition
-https://huggingface.co/facebook/roberta-hate-speech-dynabench-r4-target
-
-- Sentiment
-https://huggingface.co/tabularisai/multilingual-sentiment-analysis
-
----
-
-### ✨ Bonus: Estensione LLM-based - Generatione automatica dei report
-
-Oltre alla social analysis, è incoraggiato l’uso di LLM e modelli multimodali per:  
-
-- 📊 Generare automaticamente grafici o visualizzazioni dai dati analizzati  
-- 🧠 Riassumere in linguaggio naturale i risultati (es. "Nei commenti dalla Francia, il sentiment era positivo prima della gara, ma è calato dopo l’incidente al 35° giro")  
-
-Insomma, la generazione del report finale potrebbe essere eseguita da modelli di Generative AI.
-
-Esempi di strumenti/approcci:  
-- GPT-4-Vision, Gemini, Claude 3 per generare visualizzazioni via prompt  
-- Plotly + LLM per generare codice Python per grafici  
-- Diagrammi, mappe e infografiche sintetiche generate da modelli come DALL·E o Midjourney 
-
-
-**⚠️ Questa parte è opzionale ma valorizzata nella valutazione, dimostrando originalità e padronanza delle tecnologie LLM.**
-
----
-
-## 📦 Modalità di consegna
-
-Lista degli artefatti da consegnare:
-
-- Codice sorgente su Repository GitHub + pacchetti necessari (file requirements.txt) + eventuale Documentazione tecnica (link da condividere con gli organizzatori prima della scadenza)
-- Dataset generato dall’ingestion (**)
-- Documento PDF, Presentazione Powerpoint o qualsiasi altro formato con risultati analisi dell’evento (inclusi eventuali grafici Bonus) all’interno della repository GitHub sotto la folder reports
-
-****Consegna del dataset post-ingestion**: Se il dataset finale supera i limiti di GitHub (es. >80MB per file o >1GB totali) sarà necessario utilizzare il link che vi verrò passato **privatavamente** al quale caricare il file.
-
----
-
-## 📜 Metriche di Valutazione e Punteggi
-
-Passiamo alla valutazione della vostra soluzione che avverrà attraverso cinque macro-criteri. 
-
-Ogni aspetto tiene conto non solo della qualità tecnica, ma anche della creatività, dell’efficacia dell’analisi e della chiarezza nella comunicazione dei risultati. 
-Di seguito la griglia di valutazione dettagliata, il punteggio massimo raggiungibile è di **100**:
-
-| Macro-metrica                        | Punteggio massimo | Dettaglio                                                                 |
-|-------------------------------------|-------------------|--------------------------------------------------------------------------|
-| 1. Qualità della soluzione          | 30 pts            | Codice pulito e documentato, automazione, modularità, riusabilità                      |
-| 2. Creatività della soluzione       | 20 pts            | Idee originali, approcci inediti, uso creativo di tool/LLM              |
-| 3. Completezza del dato             | 20 pts            | Aderenza allo schema, qualità e copertura dei dati                      |
-| 4. Efficacia dell’analisi di sentiment | 15 pts         | Accuratezza, rilevanza, originalità delle intuizioni                    |
-| 5. Output e comunicazione (report, grafici, doc) | 15 pts | Chiarezza, presentazione, comprensibilità per non esperti               |
-
----
-
-## 1️⃣ Inizializzazione progetto 
-
-Ogni team deve creare una propria repository GitHub a partire da un template ufficiale fornito dall’organizzazione. Tutti i team lavoreranno sulla stessa struttura di base per garantire ordine, coerenza e facilità di valutazione.
-
-### 🚀 Istruzioni per iniziare con il template
-
-Per partecipare all’hackathon, ogni team dovrà creare repository su GitHub a cui sarà adattato il template della competizione, segui questi passaggi per iniziare a lavorare:
-
-1. **Creare la repository personale su GitHub**
-
-   Crea una nuova repository pubblica su un profilo GitHub di riferimento per il team, quindi clona la tua nuova repository in locale e posizionati nella root della stessa.
-   
-2. **Installare copier**
-
-    copier è lo strumento che ti permette di generare la struttura di progetto dal template. Va quindi installato usando pip:
-
-      ```bash
-   pip install copier
-      ```
-3. **Importare il template**
-
-    All’interno della cartella del progetto (dove hai clonato la repo), esegui il seguente comando:
-
-    ```bash
-    copier copy gh:lezzco/sentiment-analysis-hackathon-2025 .
+# Hackathon Big Data & AI
+## Official Challenge: *F1 Social Analytics Engine: extraction, integration and sentiment analysis from the Monaco GP 2025*
+### Group: *Parthenopean Paddock Labs*
+
+<img src="https://github.com/user-attachments/assets/e2e09ad7-e84d-4111-8f43-45fdc40c4a24" alt="Team Icon PPL" width="200"/>
+
+## Table of Contents
+
+* [Project Structure](#project-structure)
+* [Key Features](#key-features)
+* [Architecture](#architecture)
+* [Setup & Installation](#setup--installation)
+* [Scraping](#scraping)
+    * [Execution](#execution)
+    * [Module Description](#module-description)
+    * [Data Output](#data-output)
+* [Sentiment Analysis](#sentiment-analysis)
+    * [Workflow](#workflow)
+    * [Execution](#execution-1)
+    * [Output](#output)
+
+## Project Structure
+The project is organized using the following directory structure:
+```
+HACKATON2025/
+├── data/               # Output CSV files
+├── reports/            # Generated reports
+├── src/                # Source code
+│   ├── ingestion/      # Script to start scraping
+│   │   ├── menuScraping.py
+│   │   └── ...
+│   ├── sentiment/      # Script for sentiment analysis
+│   │   ├── sentiment.py
+│   │   └── ...
+│   │
+│   └── utils/          # Utility modules (scrapers, Redis, etc.)
+│       ├── scraperReddit.py
+│       ├── scraperYoutube.py
+│       ├── utilsMenu.py
+│       ├── utilsReddit.py
+│       ├── utilsRedis.py
+│       ├── utilsYoutube.py
+│       └── ...
+├── venv/               # Python virtual environment
+└── .env                # Environment variables file (credentials)
+```
+
+## Key Features
+- **Multi-Platform Scraping**: Collects data from:
+    - Reddit (posts and comments)
+    - YouTube (video comments)
+- **Flexible Scraping Configuration**: Allows the user to specify:
+    - Platforms to scrape.
+    - Search topics/queries.
+    - Number of posts/videos and comments to collect.
+    - Scraping frequency
+- **Data Storage**:
+    - Saves data in CSV format in the data/ directory, handling duplicates.
+    - Saves data in Redis as native JSON objects, including a nested structure for Reddit posts and comments.
+- **Persistent Storage**: Stores processed data and sentiment results in **MongoDB** for long-term access and future analysis.
+- **Duplicate Prevention**: Uses Redis sets to track already processed content and avoid re-collecting it.
+- **Automated Reporting**: Generates visual reports (charts, word clouds) and textual summaries using Matplotlib and Gemini.
+
+## Architecture
+Here is a visual representation of our project's architecture:
+![architettura_new2 drawio](https://github.com/user-attachments/assets/2950b8cf-09a3-4ca8-87dd-c87eccd91710)
+
+
+## Setup & Installation
+1. **Clone the Repository**
+    ``` Bash
+    git clone https://github.com/PartenopeanPaddockLabs/Hackaton2025.git
+    cd HACKATON2025
     ```
-    Una volta completato avrete il template installato, nelle varie folder esistono dei README.md che vi aiuterrano ad orientarvi (se questa guida principale vi sembra troppo confusionaria)
-   
-**Adesso avete questo template sulla vostra repository e potete iniziare!**
+2. **Create and Activate the Virtual Environment**
+   ``` Bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. **Install Dependencies**:
+   ``` Bash
+   pip install -r requirements.txt
+   ```
+4. **Configure Credentials**: Create a `.env` file in the root directory and add the following variables:
+   ``` Code snippet
+   # Reddit
+   CLIENT_ID='YOUR_REDDIT_CLIENT_ID'
+   CLIENT_SECRET='YOUR_REDDIT_CLIENT_SECRET'
+   USER_AGENT='YOUR_USER_AGENT'
 
----
-## Altre Info:
-- I gruppi dovranno essere composti da almeno 2 persone e massimo 4 persone;
-- Il premio finale per il gruppo vincitore sarà un buono Amazon dal valore di 400 euro.
-  
-## 🕒 Timeline
+   # YouTube
+   YOUTUBE_API_KEY='YOUR_YOUTUBE_API_KEY'
 
-| Evento                            | Data e Ora                      |
-|----------------------------------|----------------------------------|
-| ⏳ **Chiusura iscrizioni**        | 🗓️ Venerdì 23 maggio, ore 20:45     |
-| 📤 **Consegna progetto**          | 🗓️ Lunedì 26 maggio, ore 21:30      |
-| 🎤 **Presentazione risultati**    | 🗓️ Martedì 27 maggio, ore 08:30      |
+   # Redis
+   REDIS_HOST='YOUR_REDIS_HOST_ID'
+   REDIS_PORT='YOUR_PORT_ID'
+   REDIS_USERNAME='YOUR_REDIS_USERNAME_ID'
+   REDIS_PASSWORD='YOUR_REDIS_PASSWORD_ID'
+
+   # Gemini
+   GEMINI_API_KEY='YOUR_GEMINI_API_KEY'
+
+   # MongoDB
+   MONGO_CONNECTION_STRING='YOUR_MONGODB_CONNECTION_STRING'
+   ```
+Ensure a Redis instance and MongoDB instance (local or Atlas) are running and accessible.
+
+## Scraping
+### Execution
+To start scraping, run the `menuScraping.py` script from the root directory, specifying which scrapers to launch as command-line arguments.
+
+**Example**: To start both the Reddit and YouTube scrapers:
+``` Bash
+python -m src.ingestion.menuScraping reddit youtube
+```
+You will then be guided by interactive prompts to enter the configuration details for each selected scraper (topics, limits, frequency).
+
+### Module Description
+- `src/ingestion/menuScraping.py`: Main entry point. Handles command-line arguments and starts the interactive menu.
+- `src/utils/utilsMenu.py`: Manages user interaction for configuration and launches the scraping processes.
+- `src/utils/scraperReddit.py`: Contains the main loop for continuous scraping from Reddit.
+- `src/utils/scraperYoutube.py`: Contains the main loop for continuous scraping from YouTube.
+- `src/utils/utilsReddit.py`: Implements the specific logic for scraping from Reddit (using `praw`), data cleaning, and sending to Redis/CSV.
+- `src/utils/utilsYoutube.py`: Implements the specific logic for scraping from YouTube (using `googleapiclient`), data cleaning, and sending to Redis/CSV.
+- `src/utils/utilsRedis.py`: Handles all interactions with the Redis database, including connection, data saving, and duplicate checking.
+
+### Data Output
+- **CSV**: CSV files are saved in `data/` directory, named like `reddit_data_SUBREDDIT_NAME.csv` and `youtube_data_QUERY.csv`. These files are updated, and duplicates are removed with each scraping cycle.
+- **Redis**: Data is saved in Redis using specific keys (e.g., `reddit:json:POST_ID`, `youtube:json:COMMENT_ID`). The IDs of processed posts/comments are stored in Redis sets to prevent reprocessing.
+
+## Sentiment Analysis
+
+This section details the core analysis component of the F1 Social Analytics Engine. It processes the data collected from Redis, applies sentiment analysis using different models, and generates insightful reports.
+
+The sentiment analysis module acts as a **consumer process**. It continuously monitors the Redis database for new data entries (posts and comments) fetched by the scraping scripts. Once data is available, it processes it, assigns a sentiment score, and, upon user interruption, generates a comprehensive set of visual and textual reports.
+
+### Workflow
+1. **Polling Redis:** The script continuously scans the Redis database every 5 minutes for keys matching the patterns `reddit:json *` and `youtube:json*`.
+2. **Data Processing:**
+   - For **YouTube** keys, it extracts the comment text.
+   - For **Reddit** keys, it extracts the main post text and concatenates it with all its associated comments to preserve context.
+3. **Sentiment Assignment:**
+   - YouTube texts are passed to the **Hugging Face** model.
+   - Reddit combined texts are sent to **Gemini** API.
+   - Both models return a sentiment from: "Very Negative", "Negative", "Neutral", "Positive", "Very Positive".
+4.  **Saving to MongoDB:** The original data, along with its calculated sentiment score and a timestamp, is saved as a document in the MongoDB collection.
+5.  **Data Cleanup:** If the data is successfully saved to MongoDB, its key is deleted from Redis.
+4. **Report Generation (on `Ctrl+C`):** When the user stops the script:
+   - It aggregates all collected sentiment data.
+   - It generates and saves `.png` files for:
+     - Sentiment distribution bar charts (per platform).
+     - Sentiment distibution pie charts (per platform).
+     - Word clouds for each sentiment category (per platform).
+   - It sends the bar and pie charts as images to **Gemini (Multimodal)** to obtain a final textual analysis based on the visual data.
+   - The textual analysis is printed to the console.
+
+### Execution
+To run the sentiment analysis consumer, ensure your `.env` file is correctly configured (especially `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, and `GEMINI_API_KEY`) and that your scraping scripts are running and populating Redis. 
+
+1.  Make sure your virtual environment is activated:
+    ```bash
+    source venv/bin/activate  # Or venv\Scripts\activate on Windows
+    ```
+2.  Run the consumer script:
+    ```bash
+    # if you are in the root path
+    python src/sentiment/sentiment.py
+    ```
+3.  The script will start polling Redis and saving to MongoDB. Let it run for as long as you want to process data.
+4.  To stop the script and trigger the report generation, press `Ctrl+C` in your terminal.
+
+### Output
+The primary outputs are:
+- **Image Files (.png):** Several chart and word cloud images.
+- **Console Output:** Real-time processing logs and the final textual analysis generated by Gemini.
+- **MongoDB Database:** The primary persistent output, containing all processed data with sentiment scores.
+
 
