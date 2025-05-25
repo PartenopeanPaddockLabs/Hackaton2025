@@ -12,6 +12,7 @@ from redis.commands.json.path import Path
 from wordcloud import WordCloud, STOPWORDS
 import nltk
 from nltk.corpus import stopwords
+from pymongo import MongoClient
 
 load_dotenv()
 
@@ -20,6 +21,8 @@ REDIS_PORT = int(os.getenv('REDIS_PORT'))
 REDIS_USERNAME = os.getenv('REDIS_USERNAME')
 REDIS_PASSWORD = os.getenv('REDIS_PASSWORD')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+MONGO_URI = os.getenv('MONGO_CONNECION_STRING')
+
 
 if not all([REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, GEMINI_API_KEY]):
     print("Errore: Una o più variabili d'ambiente non sono state trovate.")
@@ -46,7 +49,16 @@ YOUTUBE_KEY_PATTERN = 'youtube:json*'
 POLLING_KEY_PATTERNS = [REDDIT_KEY_PATTERN, YOUTUBE_KEY_PATTERN]
 polling_interval_seconds = 300 #ogni 5 minuti il server prova a fetchare dati
 
-
+try:
+    client_mongo = MongoClient(MONGO_URI)
+    db = client_mongo['F1Hackathon']
+    collection = db['SocialData']
+    client_mongo.admin.command('ping')
+    print("Connesso a MongoDB con successo!")
+except Exception as e:
+    print(f"Errore di connessione a MongoDB: {e}")
+    print("Assicurati che l'URI di connessione sia corretto e che il server MongoDB sia accessibile.")
+    exit(1)
 
 
 hf_model_name = "tabularisai/multilingual-sentiment-analysis"
@@ -192,12 +204,16 @@ def summarizationGemini(source_type="General"):
             torta_sentiment_base64 = base64.b64encode(torta_sentiment.read()).decode('utf-8')
 
         query = f"""
-            Ti fornirò grafici di un'analisi del sentiment sui contenuti {source_type}.
-            Analizza i grafici e produci un riassunto chiaro e sintetico che includa:
-            - Tendenze principali, picchi o anomalie.
-            - Proporzioni dei sentiment (molto negativo, negativo, neutro, positivo, molto positivo).
-            - Insight interessanti o pattern ricorrenti.
-            - Suggerimenti basati sui risultati per marketing o comunicazione.
+            Ti fornirò due grafici (a barre e a torta) che mostrano i risultati di un'analisi del sentiment sui contenuti {source_type} relativi al GP di Monaco 2025.
+            Il tuo compito è analizzare **esclusivamente** questi grafici e produrre un'analisi **descrittiva e fattuale** dei risultati.
+            Il riassunto deve includere:
+
+            1.  **Distribuzione Generale:** Descrivi come si distribuiscono i sentiment (molto negativo, negativo, neutro, positivo, molto positivo), indicando le proporzioni percentuali visibili nel grafico a torta.
+            2.  **Sentiment Dominante:** Identifica chiaramente qual è il sentiment più comune e quale il meno comune.
+            3.  **Tendenze e Picchi:** Basandoti sul grafico a barre (se applicabile) e sulla torta, evidenzia se ci sono picchi significativi (ad esempio, una predominanza schiacciante di un sentiment o una presenza notevole dei sentimenti estremi 'Very Positive' o 'Very Negative').
+            4.  **Insight Fattuali:** Riporta qualsiasi osservazione oggettiva che puoi dedurre **direttamente** dai grafici, senza fare ipotesi esterne o dare consigli. Ad esempio: "Si osserva una polarizzazione se i sentimenti estremi sono alti" oppure "La maggioranza dei contenuti genera reazioni neutrali".
+
+            **IMPORTANTE:** Non includere NESSUN suggerimento, NESSUNA raccomandazione, NESSUN consiglio di marketing o comunicazione e NESSUN piano d'azione. La tua risposta deve essere **solo** un'analisi oggettiva di ciò che i grafici mostrano.
             """
         res = requests.post(
             f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}",
@@ -307,6 +323,22 @@ if __name__ == "__main__":
                                 combined_text, sentiment_val, raw_texts_for_wc_current_item = process_message(message_data)
 
                                 if combined_text is not None and sentiment_val is not None:
+
+                                    if client_mongo:
+                                        try:
+                                            message_data['sentiment'] = sentiment_val
+
+                                            collection.insert_one(message_data)
+                                            print(f"Documento {message_data.get('content_id')} salvato su MongoDB.")
+
+                                        except Exception as mongo_error:
+                                            print(f"Errore durante il salvataggio su MongoDB: {mongo_error}. Il dato non sarà eliminato da Redis.")
+                                            continue
+                                    else:
+                                        print("Connessione a MongoDB non disponibile. Salto salvataggio.")
+                                        continue
+
+
                                     social_media_type = message_data.get('social_media', 'Unknown')
                                     if social_media_type == "YouTube":
                                         final_youtube_sentiments_data.append(sentiment_val)
@@ -320,12 +352,10 @@ if __name__ == "__main__":
                                     print(f"Chiave '{key}' eliminata dopo l'elaborazione.")
                                 else:
                                     print(f"Nessun dato valido estratto per la chiave '{key}'. Potrebbe essere eliminata se vuota o non valida.")
-                                    # Considera se eliminare comunque o spostare in una 'dead letter queue'
-                                    # r.delete(key) # Decommenta se vuoi eliminare anche in caso di non validità
 
                             else:
                                 print(f"Chiave '{key}' vuota o non trovata durante il GET. Eliminazione...")
-                                r.delete(key) # Elimina se vuota per pulire
+                                r.delete(key)
                                 total_processed_keys_in_cycle += 1
 
 
