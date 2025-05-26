@@ -6,26 +6,25 @@ from redis.commands.json.path import Path
 
 load_dotenv()
 
-#-- Configuration
+#-- Configuration and connection to Redis --#
 redis_host = os.getenv("REDIS_HOST", 'localhost')
 redis_port = int(os.getenv("REDIS_PORT", 6379))
 redis_username = os.getenv("REDIS_USERNAME", "default")
 redis_password = os.getenv("REDIS_PASSWORD", None)
 redis_db = int(os.getenv("REDIS_DB", 0))
 
-processed_ids_key_prefix = "processed_reddit_ids" #per tenere traccia di quelli gia' inviati
+processed_ids_key_prefix = "processed_reddit_ids" 
 processed_ids_key_prefix_y = "processed_youtube_ids"
 
-# Connessione a Redis
 
 try:
     r = redis.Redis(
         host=redis_host,
         port=redis_port,
         db=redis_db,
-        username=redis_username, # Aggiunto il parametro username
+        username=redis_username, 
         password=redis_password,
-        decode_responses=True # Mantiene le risposte in stringhe Python, utile
+        decode_responses=True 
     )
     r.ping() # Verifica la connessione
     print(f"Connesso a Redis su {redis_host}:{redis_port}, DB {redis_db}")
@@ -38,8 +37,19 @@ except redis.exceptions.ConnectionError as e:
 except Exception as e:
     print(f"Errore generico durante la connessione a Redis: {e}")
     r = None
+#-- Configuration and connection to Redis --#
 
 
+"""
+sendDataRedditToRedis
+This function takes the dictionary created and sends it to Redis in a Key-JSON stream. 
+
+
+Args:
+    post_data: the principal structure to send, the document with the principal features of posts and comment scraped 
+    subreddit_name: the name of the specific scraped subreddit
+
+"""
 def sendDataRedditToRedis(post_data, subreddit_name):
     if r:
         try:
@@ -50,6 +60,18 @@ def sendDataRedditToRedis(post_data, subreddit_name):
         except Exception as e:
             print(f"Errore nell'invio del post a Redis con RedisJSON: {e}")
 
+
+
+"""
+checkRedditPostAlreadyElaborated
+This function checks if the post scraped from Reddit is already scraped or not.
+
+
+Args:
+    post_content_id: the id of the considered post
+    subreddit_name: the name of the specific scraped subreddit
+
+"""
 def checkRedditPostAlreadyElaborated(post_content_id, subreddit_name):
     if r:
         try:
@@ -62,6 +84,16 @@ def checkRedditPostAlreadyElaborated(post_content_id, subreddit_name):
             print(f"Error checking post id already elaborated: {e}")
             return False
         
+
+"""
+sendDataYoutubeToRedis
+This function takes the dictionary created and sends it to Redis in a Key-JSON stream. 
+
+Args:
+    video_id: the id of the video considered
+    comment_data: the principal structure to send, the document with the principal features of comments scraped
+
+"""
 def sendDataYoutubeToRedis(video_id, comment_data):
     if r: 
         try:
@@ -72,6 +104,17 @@ def sendDataYoutubeToRedis(video_id, comment_data):
         except Exception as e:
             print(f"Error sending comment to Redis: {e}")
 
+
+"""
+checkYoutubeCommentAlreadyElaborated
+This function checks if the video scraped from Youtube is already scraped or not.
+
+
+Args:
+    video_id: the id of the considered post
+    comment_id: the id of the considered comment 
+
+"""
 def checkYoutubeCommentAlreadyElaborated(video_id, comment_id):
     if r:
         try:

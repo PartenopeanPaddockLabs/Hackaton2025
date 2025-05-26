@@ -2,6 +2,11 @@ from src.utils.scraperReddit import startScrapingReddit
 from src.utils.scraperYoutube import start_scraping_youtube
 import multiprocessing as mp
 
+
+"""
+get_reddit_config, takes the config for reddit scraper
+"""
+
 def get_reddit_config():
     topic = input("Reddit - Topic to search: ")
     num_posts = int(input("Reddit - Number of posts: "))
@@ -15,6 +20,10 @@ def get_reddit_config():
         'frequency': frequency
     }
 
+
+"""
+get_youtube_config, takes the config for youtube scraper
+"""
 def get_youtube_config():
     query = input("YouTube - Content to search: ")
     max_videos = int(input("YouTube - Number of video: "))
@@ -28,8 +37,15 @@ def get_youtube_config():
         'frequency': frequency
     }
 
-#ADD OTHER CONFIGS HERE!!
+"""
+run_scraper, this function takes every confing present in configs lits and starts 
+a process (running the function startScraping...) for every config.
 
+Args:
+    parameteres: configs, is a list of "config" structure a specific dictionary made to initialize the scrapers
+
+
+"""
 def run_scraper(config):
     print(f"\n✅ Avvio scraper {config['scraper']} con configurazione:")
     for k, v in config.items():
