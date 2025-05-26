@@ -1,23 +1,32 @@
 # Hackathon Big Data & AI
 ## Official Challenge: *F1 Social Analytics Engine: extraction, integration and sentiment analysis from the Monaco GP 2025*
 ### Group: *Parthenopean Paddock Labs*
+- **Boccarossa Antonio - a.boccarossa@studenti.unina.it**
+- **Brunello Francesco - f.brunello@studenti.unina.it**
+- **Bruno Vincenzo Luigi - vincenzol.bruno@studenti.unina.it**
+- **Cangiano Salvatore - salva.cangiano@studenti.unina.it**
 
 <img src="https://github.com/user-attachments/assets/e2e09ad7-e84d-4111-8f43-45fdc40c4a24" alt="Team Icon PPL" width="200"/>
 
+
 ## Table of Contents
 
-* [Project Structure](#project-structure)
-* [Key Features](#key-features)
-* [Architecture](#architecture)
-* [Setup & Installation](#setup--installation)
-* [Scraping](#scraping)
-    * [Execution](#execution)
-    * [Module Description](#module-description)
-    * [Data Output](#data-output)
-* [Sentiment Analysis](#sentiment-analysis)
-    * [Workflow](#workflow)
-    * [Execution](#execution-1)
-    * [Output](#output)
+- [Hackathon Big Data \& AI](#hackathon-big-data--ai)
+  - [Official Challenge: *F1 Social Analytics Engine: extraction, integration and sentiment analysis from the Monaco GP 2025*](#official-challenge-f1-social-analytics-engine-extraction-integration-and-sentiment-analysis-from-the-monaco-gp-2025)
+    - [Group: *Parthenopean Paddock Labs*](#group-parthenopean-paddock-labs)
+  - [Table of Contents](#table-of-contents)
+  - [Project Structure](#project-structure)
+  - [Key Features](#key-features)
+  - [Architecture](#architecture)
+  - [Setup \& Installation](#setup--installation)
+  - [Scraping](#scraping)
+    - [Execution](#execution)
+    - [Module Description](#module-description)
+    - [Data Output](#data-output)
+  - [Sentiment Analysis](#sentiment-analysis)
+    - [Workflow](#workflow)
+    - [Execution](#execution-1)
+    - [Output](#output)
 
 ## Project Structure
 The project is organized using the following directory structure:
